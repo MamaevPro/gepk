@@ -128,7 +128,7 @@ def connect():
 		window.update()
 		current+=1
 		cmd,param=line.split(':',1)
-		
+		time.sleep(1)
 		if(cmd=='host'):
 			host=param
 			address_family, _, _, _, ip = socket.getaddrinfo(host=host,port=None,flags=socket.AI_ADDRCONFIG)[0]
