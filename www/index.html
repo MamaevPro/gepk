@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>Good Evening Port Knocker</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.6.1/font/bootstrap-icons.css">
+  <style>
+	.frm_inactive{
+		color:#CCC;
+	}
+	#frm_tbody .bi{
+		font-size: 1.5rem;
+	}
+  </style>
+</head>
+<body>
+
+<div class="row justify-content-md-center">
+<div class="col-xl-6">
+<form id="frm">
+
+
+<div class="mb-3">
+  <label for="profileid" class="form-label">Profile ID</label>
+  <input type="text" class="form-control" id="profile_id" placeholder="Config file name" value="1">
+</div>
+<div class="mb-3">
+  <label for="name" class="form-label">Profile name</label>
+  <input type="text" class="form-control" id="profile_name" placeholder="Profile name, eg Corp name">
+</div>
+<div class="mb-3">
+  <label for="host" class="form-label">Host</label>
+  <input type="text" class="form-control" id="host" placeholder="IP or domain name">
+</div>
+
+
+<table class="table">
+<thead>
+<tr>
+	<th scope="col">#</th>
+	<th scope="col">Type</th>
+	<th scope="col">Parameter</th>
+	<th scope="col">Control</th>
+</tr>
+</thead>
+
+<tbody id="frm_tbody">
+</tbody>
+</table>
+<p align="center"><button class="btn btn-primary" id="frm_sbmt">Generate key</button></p>
+</form>
+</div>
+</div>
+
+<div class="row justify-content-md-center">
+<div class="col-xl-6">
+<h6>Result connection key:</h6>
+<textarea class="form-control" id="frm_res" rows="5"></textarea><br>
+<p align="center"><button class="btn btn-primary" id="frm_copy">Copy</button></p>
+</div>
+</div>
+ 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"  crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"  integrity="sha256-eGE6blurk5sHj+rmkfsGYeKyZx3M4bG+ZlFyA7Kns7E="  crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+<script>
+$(function() {
+	var frm_rows=0;
+	function frm_repaint(){
+		i=1;
+		$('#frm_tbody tr').each(function(){
+			$(this).children('th:eq(0)').html(i);	
+			
+			if(i==1) $(this).children('td:eq(2)').children('.frm_up').addClass('frm_inactive');
+			else $(this).children('td:eq(2)').children('.frm_up').removeClass('frm_inactive');
+			
+			if(i==frm_rows) $(this).children('td:eq(2)').children('.frm_down').addClass('frm_inactive');
+			else $(this).children('td:eq(2)').children('.frm_down').removeClass('frm_inactive');
+			
+			if(frm_rows==1) $(this).children('td:eq(2)').children('.frm_del').addClass('frm_inactive');
+			else $(this).children('td:eq(2)').children('.frm_del').removeClass('frm_inactive');
+			i+=1;
+		});
+		
+	}
+
+	$('#frm_tbody').on('click','.frm_add', function(e){
+		frm_add($(this));
+		frm_repaint();
+	});
+	$('#frm_tbody').on('click','.frm_del', function(e){
+		if(frm_rows>1){
+			frm_rows-=1;
+			$(this).parent().parent().remove();
+			frm_repaint();
+		}
+	});
+	$('#frm_tbody').on('click','.frm_up', function(e){
+		$(this).parent().parent().prev('tr').before($(this).parent().parent().clone());
+		$(this).parent().parent().prev('tr').prev('tr').find(".frm_cmd").val($(this).parent().parent().find(".frm_cmd").val());
+		$(this).parent().parent().remove();
+		frm_repaint();
+	});
+	$('#frm_tbody').on('click','.frm_down', function(e){
+		$(this).parent().parent().next('tr').after($(this).parent().parent().clone());
+		$(this).parent().parent().next('tr').next('tr').find(".frm_cmd").val($(this).parent().parent().find(".frm_cmd").val());
+		$(this).parent().parent().remove();
+		frm_repaint();
+	});
+	
+	$('#frm_tbody').on('change','.frm_cmd', function(e){
+		switch($(this).val()){
+			case "1": $(this).parent().parent().children('td:eq(1)').children('input').attr("placeholder", "Port number 1-65535"); break;
+			case "2": $(this).parent().parent().children('td:eq(1)').children('input').attr("placeholder", "Port number 1-65535"); break;
+			case "3": $(this).parent().parent().children('td:eq(1)').children('input').attr("placeholder", "Packet size 1-65535"); break;
+			case "4": $(this).parent().parent().children('td:eq(1)').children('input').attr("placeholder", "Delay 1-600 in seconds"); break;
+			case "5": $(this).parent().parent().children('td:eq(1)').children('input').attr("placeholder", "/v:server-name.ru:1234 /f /prompt"); break;
+		}
+	});
+	
+	$('#frm').on('submit',function(e){
+			event.preventDefault();
+		var cmd=[];
+		var par=[];
+		$('#frm_tbody tr').each(function () {
+			cmd.push($(this).children('td:eq(0)').children('select').val());
+			par.push($(this).children('td:eq(1)').children('input').val());
+		}); 
+
+		$.post( "/generate.php", {'cmd': cmd,'par': par, 'profile_id':$('#profile_id').val(),'profile_name':$('#profile_name').val(),'host':$('#host').val()} )
+  .done(function( data ) {
+	$('#frm_res').val(data);
+  });
+
+
+	});
+	
+	$('#frm_copy').click(function(e){
+	text=$('#frm_res').val();
+		navigator.clipboard.writeText(text).then(function () {
+			$('#frm_copy').html('Copied');
+			$('#frm_copy').addClass('btn-success');
+			setTimeout(function(){
+				$('#frm_copy').removeClass('btn-success');
+				$('#frm_copy').html('Copy');
+			}, 5000);
+		}, function () {
+			$('#frm_copy').html('Copy error, check settings');
+			$('#frm_copy').addClass('btn-danger');
+			setTimeout(function(){
+				$('#frm_copy').removeClass('btn-danger');
+				$('#frm_copy').html('Copy');
+			}, 5000);
+		});
+	});
+	
+	function frm_add(btn=''){
+		frm_rows+=1;
+		str_template=`<tr>
+		<th scope="row">`+frm_rows+`</th>
+		<td>
+			<select class="form-select frm_cmd" name="cmd" placeholder="Select type of packet">
+				<option value="1">TCP</option>
+				<option value="2">UDP</option>
+				<option value="3">ICMP(Ping)</option>
+				<option value="4">Delay</option>
+				<option value="5">MTSC</option>
+			</select>
+		</td>
+		<td><input type="text" class="form-control" name="param" placeholder="Value"></td>
+		<td class="align-middle text-nowrap">
+			<i class="bi bi-plus-square frm_add"></i>
+			<i class="bi bi-caret-up-square frm_up"></i>
+			<i class="bi bi-caret-down-square frm_down"></i>
+			<i class="bi bi-x-square frm_del"></i>
+		</td>
+	</tr>`;
+		if(frm_rows==1) $('#frm_tbody').append(str_template); else
+		btn.parent().parent().after(str_template);
+	}
+	frm_add();
+	frm_repaint();
+});
+
+</script>
+</body>
+</html>
